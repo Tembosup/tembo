@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tembo — Agentes de Prospecção</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,sans-serif;background:#f0f4f8;color:#1a1a1a;min-height:100vh}
+.header{background:#1F3864;color:white;padding:16px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+.header-left h1{font-size:17px;font-weight:700}
+.header-left p{font-size:12px;opacity:.7;margin-top:2px}
+.api-badge{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);border-radius:6px;padding:5px 12px;font-size:12px;color:white;cursor:pointer;white-space:nowrap}
+.api-badge.ok{background:rgba(46,180,100,.25);border-color:rgba(46,180,100,.5)}
+.nav{background:#162d52;display:flex;gap:0;overflow-x:auto}
+.nav-btn{background:none;border:none;color:rgba(255,255,255,.6);padding:12px 20px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;border-bottom:3px solid transparent}
+.nav-btn.active{color:white;border-bottom-color:#2E75B6}
+.nav-btn:hover{color:white}
+.page{display:none;max-width:860px;margin:0 auto;padding:20px 16px}
+.page.active{display:block}
+.card{background:white;border-radius:10px;border:1px solid #e0e0e0;padding:20px 24px;margin-bottom:18px}
+.card h2{font-size:14px;font-weight:700;color:#1F3864;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid #ebebeb}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.fg{display:flex;flex-direction:column;gap:4px}
+.fg.full{grid-column:1/-1}
+label{font-size:11px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:.4px}
+input,select,textarea{font-family:Arial,sans-serif;font-size:14px;padding:8px 11px;border:1px solid #ddd;border-radius:6px;width:100%;background:white;color:#1a1a1a}
+input:focus,select:focus,textarea:focus{outline:none;border-color:#2E75B6;box-shadow:0 0 0 3px rgba(46,117,182,.1)}
+textarea{resize:vertical;min-height:64px}
+.btn{background:#1F3864;color:white;border:none;border-radius:8px;padding:11px 20px;font-size:14px;font-weight:700;cursor:pointer;width:100%;margin-top:4px}
+.btn:hover{background:#2E75B6}
+.btn:disabled{background:#aaa;cursor:not-allowed}
+.btn-outline{background:white;color:#1F3864;border:1.5px solid #1F3864;border-radius:8px;padding:9px 18px;font-size:13px;font-weight:700;cursor:pointer}
+.btn-outline:hover{background:#f0f4fa}
+.loading{text-align:center;padding:24px;color:#666;font-size:14px;display:none}
+.loading.on{display:block}
+.spin{display:inline-block;width:18px;height:18px;border:3px solid #ddd;border-top-color:#2E75B6;border-radius:50%;animation:spin .8s linear infinite;margin-right:8px;vertical-align:middle}
+@keyframes spin{to{transform:rotate(360deg)}}
+.out{display:none}
+.out.on{display:block}
+.msg-block{border:1px solid #e0e0e0;border-radius:8px;overflow:hidden;margin-bottom:12px}
+.msg-top{background:#1F3864;display:flex;justify-content:space-between;align-items:center;padding:9px 14px}
+.msg-top span{color:white;font-size:13px;font-weight:700}
+.copy-btn{background:rgba(255,255,255,.15);border:none;color:white;padding:3px 10px;border-radius:4px;font-size:12px;cursor:pointer}
+.copy-btn:hover{background:rgba(255,255,255,.28)}
+.msg-body{padding:14px;font-size:14px;line-height:1.7;white-space:pre-wrap;background:#f9fafb;color:#222}
+.tip{background:#EBF3FB;border-left:4px solid #2E75B6;padding:9px 13px;border-radius:0 6px 6px 0;font-size:13px;color:#1a4a7a;margin-top:10px}
+
+/* HOME */
+.home-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:4px}
+.home-card{background:white;border-radius:10px;border:1px solid #e0e0e0;padding:20px;cursor:pointer;transition:box-shadow .15s,transform .15s}
+.home-card:hover{box-shadow:0 4px 18px rgba(31,56,100,.12);transform:translateY(-2px)}
+.home-card .num{font-size:28px;font-weight:700;color:#2E75B6;margin-bottom:8px}
+.home-card h3{font-size:14px;font-weight:700;color:#1F3864;margin-bottom:6px}
+.home-card p{font-size:12px;color:#666;line-height:1.5}
+.home-card .tag{display:inline-block;background:#e8f0fb;color:#1F3864;font-size:11px;font-weight:700;padding:2px 8px;border-radius:12px;margin-top:10px}
+.key-setup{background:white;border-radius:10px;border:2px dashed #2E75B6;padding:20px 24px;margin-bottom:18px;text-align:center}
+.key-setup h3{font-size:15px;font-weight:700;color:#1F3864;margin-bottom:8px}
+.key-setup p{font-size:13px;color:#666;margin-bottom:14px}
+.key-row{display:flex;gap:8px;max-width:480px;margin:0 auto}
+.key-row input{font-size:13px}
+.key-row button{background:#1F3864;color:white;border:none;border-radius:6px;padding:0 16px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap}
+
+/* SIMULADOR */
+.scores{display:flex;gap:10px;margin-bottom:14px}
+.score{flex:1;background:#f0f4fa;border-radius:8px;padding:10px;text-align:center}
+.score .sn{font-size:22px;font-weight:700;color:#1F3864}
+.score .sl{font-size:11px;color:#666}
+.messages{min-height:180px;max-height:380px;overflow-y:auto;padding:14px;background:#f8f9fb;border:1px solid #e8e8e8;border-radius:8px;margin-bottom:12px;display:flex;flex-direction:column;gap:10px}
+.msg{max-width:82%;padding:9px 13px;border-radius:10px;font-size:14px;line-height:1.6}
+.msg.prospect{background:#e8edf5;align-self:flex-start;border-bottom-left-radius:3px}
+.msg.prospect .who{font-size:11px;font-weight:700;color:#2E75B6;margin-bottom:3px}
+.msg.daniele{background:#1F3864;color:white;align-self:flex-end;border-bottom-right-radius:3px}
+.msg.daniele .who{font-size:11px;font-weight:700;color:#a8c4e8;margin-bottom:3px}
+.msg.feedback{background:#EAF4EA;color:#1a4a1a;align-self:stretch;max-width:100%;border-left:4px solid #2e7d32;border-radius:0 8px 8px 0;font-size:13px}
+.msg.feedback .who{font-size:11px;font-weight:700;color:#2e7d32;margin-bottom:3px}
+.chips{display:flex;flex-wrap:wrap;gap:7px;margin:10px 0 14px}
+.chip{background:#e8edf5;border:1px solid #c0cfe8;color:#1F3864;border-radius:20px;padding:4px 12px;font-size:12px;font-weight:700;cursor:pointer}
+.chip:hover{background:#d0dcf0}
+.inp-row{display:flex;gap:8px}
+.inp-row textarea{font-size:14px;padding:9px 12px;border:1px solid #ddd;border-radius:8px;flex:1;resize:none;height:48px}
+.btn-send{background:#1F3864;color:white;border:none;border-radius:8px;padding:0 18px;font-size:14px;font-weight:700;cursor:pointer;min-width:80px}
+.btn-send:hover{background:#2E75B6}
+.btn-send:disabled{background:#aaa;cursor:not-allowed}
+.sspin{display:inline-block;width:13px;height:13px;border:2px solid rgba(255,255,255,.4);border-top-color:white;border-radius:50%;animation:spin .8s linear infinite;vertical-align:middle}
+
+/* PROPOSTA */
+.prow{display:grid;grid-template-columns:2fr 1fr 1fr 1fr 36px;gap:8px;align-items:end;margin-bottom:8px}
+.btn-add{background:#e8f0fb;color:#1F3864;border:1.5px dashed #2E75B6;border-radius:6px;padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer;width:100%}
+.btn-rm{background:#fce8e8;color:#c00;border:none;border-radius:6px;padding:8px 9px;font-size:15px;cursor:pointer;font-weight:700;width:36px}
+.prop-wrap{background:white;border:2px solid #1F3864;border-radius:10px;overflow:hidden}
+.prop-head{background:#1F3864;color:white;padding:20px 24px}
+.prop-head h3{font-size:18px;font-weight:700}
+.prop-head p{font-size:12px;opacity:.8;margin-top:3px}
+.prop-body{padding:20px 24px}
+.prop-sec{margin-bottom:18px}
+.prop-sec h4{font-size:12px;font-weight:700;color:#1F3864;text-transform:uppercase;letter-spacing:.4px;margin-bottom:8px;border-bottom:1px solid #ebebeb;padding-bottom:5px}
+.prop-sec p{font-size:14px;line-height:1.7;color:#333;white-space:pre-wrap}
+.ptab{width:100%;border-collapse:collapse;font-size:13px}
+.ptab th{background:#1F3864;color:white;padding:7px 10px;text-align:left;font-size:12px}
+.ptab td{padding:8px 10px;border-bottom:1px solid #ebebeb}
+.ptab .tr td{font-weight:700;background:#f0f4fa;color:#1F3864}
+.difs{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.dif{background:#f0f4fa;border-radius:7px;padding:10px;text-align:center;font-size:12px;font-weight:700;color:#1F3864}
+.prop-foot{background:#f8f9fb;padding:12px 24px;border-top:1px solid #ebebeb;font-size:12px;color:#555;display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px}
+.acts{display:flex;gap:8px;margin-top:14px}
+
+@media(max-width:600px){.g2,.home-grid,.prow{grid-template-columns:1fr}.fg.full{grid-column:1}.difs{grid-template-columns:1fr}.prop-foot{flex-direction:column}}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <h1>Tembo Suprimentos — Agentes de Prospecção</h1>
+    <p>Gerador de Mensagens · Simulador de Objeções · Gerador de Proposta</p>
+  </div>
+  <div class="api-badge" id="apiBadge" onclick="showKeySetup()">🔑 Configurar API Key</div>
+</div>
+
+<div class="nav">
+  <button class="nav-btn active" onclick="goTo('home',this)">Início</button>
+  <button class="nav-btn" onclick="goTo('ag1',this)">01 · Mensagens</button>
+  <button class="nav-btn" onclick="goTo('ag2',this)">02 · Objeções</button>
+  <button class="nav-btn" onclick="goTo('ag3',this)">03 · Proposta</button>
+</div>
+
+<!-- HOME -->
+<div class="page active" id="home">
+  <div style="max-width:860px;margin:0 auto;padding:20px 16px">
+    <div class="key-setup" id="keySetup">
+      <h3>Configure sua API Key para começar</h3>
+      <p>Crie uma chave gratuita em <a href="https://console.anthropic.com" target="_blank" style="color:#2E75B6">console.anthropic.com</a> e cole abaixo.</p>
+      <div class="key-row">
+        <input type="password" id="apiKeyInput" placeholder="sk-ant-...">
+        <button onclick="salvarKey()">Salvar</button>
+      </div>
+    </div>
+    <div class="home-grid">
+      <div class="home-card" onclick="goTo('ag1',document.querySelectorAll('.nav-btn')[1])">
+        <div class="num">01</div>
+        <h3>Gerador de Mensagens</h3>
+        <p>Mensagem personalizada para LinkedIn e e-mail frio com base no perfil do prospect.</p>
+        <span class="tag">LinkedIn + E-mail</span>
+      </div>
+      <div class="home-card" onclick="goTo('ag2',document.querySelectorAll('.nav-btn')[2])">
+        <div class="num">02</div>
+        <h3>Simulador de Objeções</h3>
+        <p>Treine o contorno de objeções com prospect simulado por IA e feedback em tempo real.</p>
+        <span class="tag">Treinamento</span>
+      </div>
+      <div class="home-card" onclick="goTo('ag3',document.querySelectorAll('.nav-btn')[3])">
+        <div class="num">03</div>
+        <h3>Gerador de Proposta</h3>
+        <p>Proposta comercial completa e personalizada gerada em menos de 2 minutos.</p>
+        <span class="tag">Fechamento</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- AGENTE 1 -->
+<div class="page" id="ag1">
+  <div class="card">
+    <h2>Dados do Prospect</h2>
+    <div class="g2">
+      <div class="fg"><label>Nome do Decisor</label><input type="text" id="a1nome" placeholder="Ex: Carlos Mendes"></div>
+      <div class="fg"><label>Empresa</label><input type="text" id="a1emp" placeholder="Ex: Distribuidora Omega Ltda"></div>
+      <div class="fg"><label>Cargo / Persona</label>
+        <select id="a1cargo">
+          <option value="">Selecione...</option>
+          <option>Analista de TI</option><option>Coordenador de TI</option><option>Gerente de TI</option>
+          <option>Analista de Compras</option><option>Coordenador de Compras</option><option>Gerente de Compras</option>
+          <option>Diretor Administrativo</option><option>Sócio / Dono</option>
+        </select>
+      </div>
+      <div class="fg"><label>Segmento</label>
+        <select id="a1seg">
+          <option value="">Selecione...</option>
+          <option>Indústria</option><option>Distribuidora / Logística</option>
+          <option>Serviços Corporativos</option><option>Varejo / Comércio</option>
+          <option>Advocacia</option><option>Contabilidade</option>
+          <option>Engenharia / Construção</option><option>Consultoria</option>
+        </select>
+      </div>
+      <div class="fg"><label>Produto Principal</label>
+        <select id="a1prod">
+          <option>Microsoft 365</option><option>Hardware (notebooks/desktops)</option>
+          <option>Locação de equipamentos</option><option>Servidores</option><option>Solução completa de TI</option>
+        </select>
+      </div>
+      <div class="fg"><label>Canal</label>
+        <select id="a1canal">
+          <option value="linkedin_conexao">LinkedIn — Pedido de conexão</option>
+          <option value="linkedin_pos">LinkedIn — Pós-conexão</option>
+          <option value="email">E-mail frio</option>
+          <option value="breakup">Breakup message (dia 7)</option>
+        </select>
+      </div>
+      <div class="fg full"><label>Contexto adicional (opcional)</label>
+        <textarea id="a1ctx" placeholder="Ex: Empresa está expandindo. / Indicação de contato em comum."></textarea>
+      </div>
+    </div>
+    <button class="btn" id="a1btn" onclick="gerarMensagem()">Gerar mensagem personalizada</button>
+  </div>
+  <div class="loading" id="a1load"><span class="spin"></span>Gerando mensagem...</div>
+  <div class="out" id="a1out">
+    <div class="card">
+      <h2>Mensagem gerada</h2>
+      <div id="a1msgs"></div>
+      <div class="tip" id="a1dica"></div>
+    </div>
+  </div>
+</div>
+
+<!-- AGENTE 2 -->
+<div class="page" id="ag2">
+  <div class="card" id="simSetup">
+    <h2>Configure o cenário</h2>
+    <div class="g2">
+      <div class="fg"><label>Persona</label>
+        <select id="s1"><option>Analista de TI</option><option>Coordenador de TI</option><option>Analista de Compras</option><option>Gerente de Compras</option><option>Sócio / Dono</option></select>
+      </div>
+      <div class="fg"><label>Segmento</label>
+        <select id="s2"><option>Indústria</option><option>Distribuidora / Logística</option><option>Serviços Corporativos</option><option>Varejo / Comércio</option></select>
+      </div>
+      <div class="fg"><label>Dificuldade</label>
+        <select id="s3"><option value="facil">Fácil — receptivo</option><option value="medio" selected>Médio — cético</option><option value="dificil">Difícil — resistente</option></select>
+      </div>
+      <div class="fg"><label>Produto</label>
+        <select id="s4"><option>Microsoft 365</option><option>Hardware corporativo</option><option>Locação de equipamentos</option></select>
+      </div>
+    </div>
+    <button class="btn" onclick="simIniciar()" style="margin-top:8px">Iniciar simulação</button>
+  </div>
+  <div class="card out" id="simChat">
+    <h2>Simulação em andamento</h2>
+    <div class="scores">
+      <div class="score"><div class="sn" id="sR">0</div><div class="sl">Respostas</div></div>
+      <div class="score"><div class="sn" id="sA">0</div><div class="sl">Eficazes</div></div>
+      <div class="score"><div class="sn" id="sO">0</div><div class="sl">Objeções</div></div>
+    </div>
+    <div class="messages" id="simMsgs"></div>
+    <div style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;margin-bottom:7px">Objeções rápidas:</div>
+    <div class="chips">
+      <span class="chip" onclick="simLancar('Está caro')">Está caro</span>
+      <span class="chip" onclick="simLancar('Já temos fornecedor')">Já temos fornecedor</span>
+      <span class="chip" onclick="simLancar('Não conheço a Tembo')">Não conheço a Tembo</span>
+      <span class="chip" onclick="simLancar('Preciso aprovar com diretoria')">Preciso aprovar com diretoria</span>
+      <span class="chip" onclick="simLancar('Agora não é o momento')">Agora não é o momento</span>
+      <span class="chip" onclick="simLancar('Manda proposta por e-mail')">Manda proposta por e-mail</span>
+    </div>
+    <div class="inp-row">
+      <textarea id="simInp" placeholder="Digite sua resposta..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();simEnviar();}"></textarea>
+      <button class="btn-send" id="simBtn" onclick="simEnviar()">Enviar</button>
+    </div>
+    <button class="btn-outline" style="margin-top:10px" onclick="simNova()">Nova simulação</button>
+  </div>
+</div>
+
+<!-- AGENTE 3 -->
+<div class="page" id="ag3">
+  <div class="card">
+    <h2>Dados da Proposta</h2>
+    <div style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;margin-bottom:10px">Cliente</div>
+    <div class="g2">
+      <div class="fg"><label>Nome</label><input type="text" id="p1" placeholder="Ex: Carlos Mendes"></div>
+      <div class="fg"><label>Empresa</label><input type="text" id="p2" placeholder="Ex: Distribuidora Omega Ltda"></div>
+      <div class="fg"><label>Cargo</label><input type="text" id="p3" placeholder="Ex: Coordenador de TI"></div>
+      <div class="fg"><label>Segmento</label>
+        <select id="p4"><option>Indústria</option><option>Distribuidora / Logística</option><option>Serviços Corporativos</option><option>Varejo / Comércio</option><option>Advocacia</option><option>Contabilidade</option><option>Engenharia / Construção</option></select>
+      </div>
+    </div>
+    <div style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;margin:16px 0 10px">Produtos</div>
+    <div id="prods">
+      <div class="prow">
+        <div><label>Produto</label><input type="text" class="pd" placeholder="Ex: Microsoft 365 Business Standard"></div>
+        <div><label>Qtd</label><input type="number" class="pq" value="1" min="1"></div>
+        <div><label>Unit. R$</label><input type="number" class="pp" placeholder="0.00" step="0.01"></div>
+        <div><label>Período</label><select class="per"><option>Mensal</option><option>Anual</option><option>Único</option></select></div>
+        <button class="btn-rm" onclick="rmP(this)">×</button>
+      </div>
+    </div>
+    <button class="btn-add" onclick="addP()">+ Adicionar produto</button>
+    <div style="font-size:11px;font-weight:700;color:#888;text-transform:uppercase;margin:16px 0 10px">Condições</div>
+    <div class="g2">
+      <div class="fg"><label>Pagamento</label>
+        <select id="p5"><option>Boleto bancário</option><option>PIX</option><option>Cartão (até 12x)</option><option>Transferência</option></select>
+      </div>
+      <div class="fg"><label>Validade</label>
+        <select id="p6"><option>5 dias úteis</option><option>7 dias corridos</option><option>10 dias corridos</option><option>15 dias corridos</option></select>
+      </div>
+      <div class="fg full"><label>Contexto da qualificação</label>
+        <textarea id="p7" placeholder="Ex: Usa Office 2019 desatualizado, 15 usuários, maior dor é falta de suporte."></textarea>
+      </div>
+    </div>
+    <button class="btn" id="p8btn" onclick="gerarProposta()">Gerar proposta</button>
+  </div>
+  <div class="loading" id="p8load"><span class="spin"></span>Gerando proposta...</div>
+  <div class="out" id="p8out">
+    <div class="prop-wrap" id="propPrev"></div>
+    <div class="acts">
+      <button class="btn" onclick="copiarProp()" style="flex:1">Copiar texto da proposta</button>
+      <button class="btn-outline" onclick="novaProp()">Nova proposta</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let API_KEY = localStorage.getItem('tembo_key') || '';
+let simHist=[], simCfg={}, simSc={r:0,a:0,o:0};
+
+function goTo(id, btn) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  btn.classList.add('active');
+}
+function showKeySetup(){document.getElementById('keySetup').scrollIntoView({behavior:'smooth'});goTo('home',document.querySelectorAll('.nav-btn')[0]);}
+function salvarKey(){
+  const k=document.getElementById('apiKeyInput').value.trim();
+  if(!k.startsWith('sk-')){alert('API key inválida. Deve começar com sk-');return;}
+  API_KEY=k;localStorage.setItem('tembo_key',k);
+  document.getElementById('apiBadge').textContent='✅ API Key salva';
+  document.getElementById('apiBadge').classList.add('ok');
+  document.getElementById('keySetup').style.display='none';
+}
+if(API_KEY){
+  document.getElementById('apiBadge').textContent='✅ API Key salva';
+  document.getElementById('apiBadge').classList.add('ok');
+  document.getElementById('keySetup').style.display='none';
+}
+
+async function callAI(messages, system, maxTokens=900) {
+  if(!API_KEY){alert('Configure sua API Key primeiro (botão no topo).');return null;}
+  const body={model:'claude-sonnet-4-20250514',max_tokens:maxTokens,messages};
+  if(system) body.system=system;
+  const r=await fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','x-api-key':API_KEY,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+    body:JSON.stringify(body)
+  });
+  if(!r.ok){const e=await r.json();throw new Error(e.error?.message||'Erro na API');}
+  const d=await r.json();
+  return d.content[0].text;
+}
+
+// ── AGENTE 1 ──────────────────────────────────────────────────────────────
+const DICAS={
+  linkedin_conexao:'Envie sem nota se o perfil parecer frio. Use apenas quando há gancho claro (conexão em comum, mesma região).',
+  linkedin_pos:'Aguarde 1 dia após a conexão ser aceita. Não venda — o objetivo é abrir conversa.',
+  email:'Envie entre 8h e 10h de terça a quinta. Faça follow-up em 24h sem resposta.',
+  breakup:'Envie no dia 7 da cadência. Tom leve — você quer deixar porta aberta.'
+};
+const CANALMAP={linkedin_conexao:'LinkedIn — Conexão',linkedin_pos:'LinkedIn — Pós-conexão',email:'E-mail frio',breakup:'Breakup message'};
+
+async function gerarMensagem(){
+  const nome=document.getElementById('a1nome').value.trim();
+  const emp=document.getElementById('a1emp').value.trim();
+  const cargo=document.getElementById('a1cargo').value;
+  const seg=document.getElementById('a1seg').value;
+  const prod=document.getElementById('a1prod').value;
+  const canal=document.getElementById('a1canal').value;
+  const ctx=document.getElementById('a1ctx').value.trim();
+  if(!nome||!emp||!cargo||!seg){alert('Preencha Nome, Empresa, Cargo e Segmento.');return;}
+  document.getElementById('a1out').classList.remove('on');
+  document.getElementById('a1load').classList.add('on');
+  document.getElementById('a1btn').disabled=true;
+  const instrMap={
+    linkedin_conexao:'Escreva SOMENTE uma nota de pedido de conexão no LinkedIn. Máximo 300 caracteres. Tom profissional e direto. SEM preço. Termine com algo que gere curiosidade.',
+    linkedin_pos:'Escreva mensagem pós-conexão. 3-4 parágrafos curtos. Apresente a Tembo, fale do produto, termine com UMA pergunta fechada sobre a situação atual deles. Tom consultivo.',
+    email:'E-mail frio B2B completo. Inclua linha "Assunto:", saudação, 3-4 parágrafos curtos, CTA pedindo 15 minutos, assinatura: Daniele Borges | Tembo Suprimentos | (11) 5194-7096 | atendimento@tembosuprimentos.com.br',
+    breakup:'Breakup message após 7 dias sem resposta. Tom leve, sem ressentimento, deixando porta aberta. Máximo 5 linhas.'
+  };
+  const persona=cargo.includes('TI')?'influenciador técnico':cargo.includes('Compras')?'decisor operacional de compras':'decisor geral';
+  const prompt=`Você é Daniele Borges da Tembo Suprimentos, revendedora de tecnologia B2B em Jundiaí, SP. Vende Microsoft 365, hardware Dell/Lenovo/HP, locação de equipamentos, licenciamento Adobe/Veeam. Diferenciais: produto original, ativação 24h, suporte consultivo local sem fila.
+
+Prospect: ${nome} | ${emp} | ${cargo} (${persona}) | ${seg} | Produto: ${prod}${ctx?'\nContexto: '+ctx:''}
+
+Instrução: ${instrMap[canal]}
+
+Regras: português brasileiro, personalizado para o segmento e cargo, SEM preço, SEM "espero que esteja bem", máximo 1 emoji, direto e objetivo. Escreva APENAS a mensagem.`;
+  try{
+    const txt=await callAI([{role:'user',content:prompt}],null);
+    if(!txt)return;
+    document.getElementById('a1load').classList.remove('on');
+    document.getElementById('a1out').classList.add('on');
+    const c=document.getElementById('a1msgs');c.innerHTML='';
+    const b=document.createElement('div');b.className='msg-block';
+    const safe=txt.replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    b.innerHTML=`<div class="msg-top"><span>${CANALMAP[canal]}</span><button class="copy-btn" onclick="cp(this,\`${txt.replace(/`/g,'\\`')}\`)">Copiar</button></div><div class="msg-body">${safe}</div>`;
+    c.appendChild(b);
+    document.getElementById('a1dica').textContent='💡 '+DICAS[canal];
+  }catch(e){document.getElementById('a1load').classList.remove('on');alert('Erro: '+e.message);}
+  document.getElementById('a1btn').disabled=false;
+}
+function cp(btn,txt){navigator.clipboard.writeText(txt).then(()=>{btn.textContent='Copiado!';setTimeout(()=>btn.textContent='Copiar',2000);});}
+
+// ── AGENTE 2 ──────────────────────────────────────────────────────────────
+function simUpd(){document.getElementById('sR').textContent=simSc.r;document.getElementById('sA').textContent=simSc.a;document.getElementById('sO').textContent=simSc.o;}
+function simAddMsg(tipo,who,txt){
+  const m=document.getElementById('simMsgs');
+  const d=document.createElement('div');d.className='msg '+tipo;
+  d.innerHTML='<div class="who">'+who+'</div>'+txt.replace(/</g,'&lt;');
+  m.appendChild(d);m.scrollTop=m.scrollHeight;
+}
+function simIniciar(){
+  simCfg={persona:document.getElementById('s1').value,seg:document.getElementById('s2').value,dif:document.getElementById('s3').value,prod:document.getElementById('s4').value};
+  simHist=[];simSc={r:0,a:0,o:0};simUpd();
+  document.getElementById('simSetup').style.display='none';
+  document.getElementById('simChat').classList.add('on');
+  document.getElementById('simMsgs').innerHTML='';
+  simAddMsg('prospect',simCfg.persona,'Olá, pode falar rapidamente sobre '+simCfg.prod+'?');
+}
+function simLancar(obj){simAddMsg('prospect',simCfg.persona,obj);simHist.push({role:'assistant',content:obj});simSc.o++;simUpd();document.getElementById('simInp').focus();}
+async function simEnviar(){
+  const inp=document.getElementById('simInp');const txt=inp.value.trim();if(!txt)return;
+  inp.value='';simAddMsg('daniele','Você (Daniele)',txt);simHist.push({role:'user',content:txt});simSc.r++;simUpd();
+  document.getElementById('simBtn').disabled=true;
+  document.getElementById('simBtn').innerHTML='<span class="sspin"></span>';
+  const difMap={facil:'receptivo e amigável',medio:'cético mas profissional',dificil:'resistente, direto e exigente'};
+  const sys=`Você é ${simCfg.persona} de empresa de ${simCfg.seg} em Jundiaí, SP. Perfil: ${difMap[simCfg.dif]}. Sendo abordado por Daniele Borges da Tembo Suprimentos sobre ${simCfg.prod}. Avalie a resposta de Daniele: 1) Responda COMO o prospect (natural, 2-4 linhas). 2) Se eficaz, abra mais; se ineficaz, lance nova objeção. 3) Adicione linha "FEEDBACK:" avaliando brevemente (max 2 linhas) o que foi bem ou poderia melhorar.`;
+  try{
+    const resp=await callAI(simHist,sys,400);
+    if(!resp)return;
+    const partes=resp.split('FEEDBACK:');
+    const rP=partes[0].trim();const fb=partes[1]?.trim();
+    simAddMsg('prospect',simCfg.persona,rP);simHist.push({role:'assistant',content:rP});
+    if(fb){const ef=!fb.toLowerCase().includes('faltou')&&!fb.toLowerCase().includes('poderia')&&!fb.toLowerCase().includes('evite');if(ef)simSc.a++;simUpd();simAddMsg('feedback','Feedback da IA',fb);}
+  }catch(e){simAddMsg('feedback','Erro','Falha: '+e.message);}
+  document.getElementById('simBtn').disabled=false;
+  document.getElementById('simBtn').textContent='Enviar';
+}
+function simNova(){document.getElementById('simSetup').style.display='block';document.getElementById('simChat').classList.remove('on');}
+
+// ── AGENTE 3 ──────────────────────────────────────────────────────────────
+function addP(){
+  const c=document.getElementById('prods');const d=document.createElement('div');d.className='prow';
+  d.innerHTML='<div><label>Produto</label><input type="text" class="pd" placeholder="Ex: Notebook Dell"></div><div><label>Qtd</label><input type="number" class="pq" value="1" min="1"></div><div><label>Unit. R$</label><input type="number" class="pp" placeholder="0.00" step="0.01"></div><div><label>Período</label><select class="per"><option>Mensal</option><option>Anual</option><option>Único</option></select></div><button class="btn-rm" onclick="rmP(this)">×</button>';
+  c.appendChild(d);
+}
+function rmP(b){if(document.querySelectorAll('.prow').length>1)b.closest('.prow').remove();}
+function getProd(){return Array.from(document.querySelectorAll('.prow')).map(r=>({d:r.querySelector('.pd').value.trim(),q:parseInt(r.querySelector('.pq').value)||1,p:parseFloat(r.querySelector('.pp').value)||0,per:r.querySelector('.per').value})).filter(x=>x.d);}
+function fmt(v){return v.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});}
+
+async function gerarProposta(){
+  const n=document.getElementById('p1').value.trim(),e=document.getElementById('p2').value.trim();
+  const c=document.getElementById('p3').value.trim(),s=document.getElementById('p4').value;
+  const pag=document.getElementById('p5').value,val=document.getElementById('p6').value,ctx=document.getElementById('p7').value.trim();
+  const prods=getProd();
+  if(!n||!e||!prods.length){alert('Preencha Nome, Empresa e ao menos um produto.');return;}
+  document.getElementById('p8out').classList.remove('on');
+  document.getElementById('p8load').classList.add('on');
+  document.getElementById('p8btn').disabled=true;
+  const total=prods.reduce((a,p)=>a+(p.q*p.p),0);
+  const prodTxt=prods.map(p=>`- ${p.d} | Qtd: ${p.q} | Unit: R$${p.p.toFixed(2)} | ${p.per}`).join('\n');
+  const prompt=`Redatora comercial da Tembo Suprimentos. Escreva texto de proposta comercial.
+
+Cliente: ${n} | ${e} | ${c} | ${s}
+Produtos:\n${prodTxt}
+Total: R$ ${total.toFixed(2)} | Pagamento: ${pag} | Validade: ${val}
+Contexto: ${ctx||'Não informado'}
+
+Escreva APENAS estes blocos separados por ###:
+
+### CONTEXTO
+(2-3 frases sobre a situação do cliente e por que esta solução faz sentido)
+
+### SOLUCAO
+(2-3 frases sobre o que está sendo proposto e o benefício principal)
+
+### DIFERENCIAIS
+(Exatamente 3 diferenciais curtos da Tembo, cada um em uma linha começando com —)
+
+### CTA
+(1-2 frases de fechamento com call to action claro)
+
+Tom: profissional, direto, foco nos benefícios. Português brasileiro.`;
+  try{
+    const txt=await callAI([{role:'user',content:prompt}],null,800);
+    if(!txt)return;
+    const blocos={};
+    txt.split('###').filter(s=>s.trim()).forEach(part=>{
+      const ls=part.trim().split('\n');
+      blocos[ls[0].trim().toUpperCase().replace(/\s+/g,'_')]=ls.slice(1).join('\n').trim();
+    });
+    const hoje=new Date().toLocaleDateString('pt-BR');
+    const tabHtml=prods.map((p,i)=>`<tr style="background:${i%2?'#f8f9fb':'white'}"><td>${p.d}</td><td style="text-align:center">${p.q}</td><td style="text-align:right">${fmt(p.p)}</td><td>${p.per}</td><td style="text-align:right;font-weight:700">${fmt(p.q*p.p)}</td></tr>`).join('');
+    const difHtml=(blocos['DIFERENCIAIS']||'').split('\n').filter(l=>l.trim()).map(l=>`<div class="dif">${l.replace(/^[-–•]\s*/,'')}</div>`).join('');
+    document.getElementById('propPrev').innerHTML=`
+      <div class="prop-head"><h3>Proposta Comercial — ${e}</h3><p>Att: ${n} (${c}) • Emitida em ${hoje} • Válida por ${val}</p></div>
+      <div class="prop-body">
+        <div class="prop-sec"><h4>Contexto</h4><p>${blocos['CONTEXTO']||''}</p></div>
+        <div class="prop-sec"><h4>Solução proposta</h4><p>${blocos['SOLUCAO']||''}</p></div>
+        <div class="prop-sec"><h4>Produtos e valores</h4>
+          <table class="ptab"><thead><tr><th>Produto</th><th style="text-align:center">Qtd</th><th style="text-align:right">Unit.</th><th>Período</th><th style="text-align:right">Total</th></tr></thead>
+          <tbody>${tabHtml}<tr class="tr"><td colspan="4">Valor total</td><td style="text-align:right">${fmt(total)}</td></tr></tbody></table>
+          <p style="font-size:12px;color:#666;margin-top:6px">Pagamento: ${pag}</p></div>
+        <div class="prop-sec"><h4>Por que a Tembo?</h4><div class="difs">${difHtml}</div></div>
+        <div class="prop-sec"><h4>Próximo passo</h4><p>${blocos['CTA']||''}</p></div>
+      </div>
+      <div class="prop-foot"><span><strong>Daniele Borges</strong> | Tembo Suprimentos</span><span>(11) 5194-7096 | atendimento@tembosuprimentos.com.br</span></div>`;
+    document.getElementById('p8load').classList.remove('on');
+    document.getElementById('p8out').classList.add('on');
+  }catch(e){document.getElementById('p8load').classList.remove('on');alert('Erro: '+e.message);}
+  document.getElementById('p8btn').disabled=false;
+}
+function copiarProp(){navigator.clipboard.writeText(document.getElementById('propPrev').innerText).then(()=>alert('Proposta copiada!'));}
+function novaProp(){document.getElementById('p8out').classList.remove('on');['p1','p2','p3','p7'].forEach(id=>document.getElementById(id).value='');document.querySelectorAll('.prow').forEach((r,i)=>{if(i>0)r.remove();});document.querySelector('.pd').value='';document.querySelector('.pq').value='1';document.querySelector('.pp').value='';}
+</script>
+</body>
+</html>
